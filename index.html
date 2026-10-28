@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amigo Secreto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rojo:#c8102e; --rojo-osc:#7a0a1c; --verde:#0f5132; --verde-osc:#08291b;
+    --dorado:#f4c430; --crema:#fff8e7; --texto:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Nunito',system-ui,sans-serif;color:var(--texto);
+    background:radial-gradient(ellipse at top,#16603d 0%,var(--verde-osc) 60%,#04150d 100%) fixed;
+    min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;
+  }
+  #nieve{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+  /* Guirnalda de luces */
+  .luces{position:fixed;top:-6px;left:0;right:0;height:46px;display:flex;justify-content:space-around;z-index:2;
+    background:radial-gradient(ellipse 60% 18px at 50% 0,transparent 70%,transparent 71%) ;}
+  .luces::before{content:"";position:absolute;left:0;right:0;top:10px;height:2px;background:#1b1b1b}
+  .luz{width:12px;height:20px;border-radius:50%;margin-top:12px;position:relative;animation:brillo 1.6s infinite}
+  .luz::before{content:"";position:absolute;top:-5px;left:3px;width:6px;height:6px;background:#333;border-radius:2px}
+  .luz:nth-child(4n+1){background:#ff3b3b;color:#ff3b3b}
+  .luz:nth-child(4n+2){background:#ffd93b;color:#ffd93b;animation-delay:.4s}
+  .luz:nth-child(4n+3){background:#3bd1ff;color:#3bd1ff;animation-delay:.8s}
+  .luz:nth-child(4n+4){background:#5dff7a;color:#5dff7a;animation-delay:1.2s}
+  @keyframes brillo{0%,100%{box-shadow:0 0 14px 3px currentColor;opacity:1}50%{box-shadow:0 0 2px 0 currentColor;opacity:.45}}
+
+  main{position:relative;z-index:1;width:100%;max-width:460px;padding:80px 16px 40px;text-align:center;flex:1}
+  h1{font-family:'Mountains of Christmas',cursive;font-size:clamp(44px,12vw,64px);line-height:1;color:var(--dorado);
+    text-shadow:0 3px 0 var(--rojo-osc),0 0 24px rgba(244,196,48,.45)}
+  .sub{margin:12px 0 96px;font-size:17px;opacity:.9}
+
+  .tarjeta{background:var(--crema);color:#3a1d14;border-radius:22px;padding:28px 22px 26px;position:relative;
+    box-shadow:0 18px 40px rgba(0,0,0,.45);border:4px solid var(--rojo)}
+  .tarjeta::before{content:"";position:absolute;inset:6px;border:2px dashed rgba(200,16,46,.35);border-radius:16px;pointer-events:none}
+
+  /* Regalo */
+  .regalo{width:120px;height:120px;margin:-90px auto 10px;position:relative}
+  .caja{position:absolute;bottom:0;left:10px;width:100px;height:72px;background:var(--rojo);border-radius:6px;
+    box-shadow:inset 0 -8px 0 rgba(0,0,0,.15)}
+  .caja::after,.tapa::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:16px;height:100%;background:var(--dorado)}
+  .tapa{position:absolute;bottom:68px;left:2px;width:116px;height:24px;background:#e01b3c;border-radius:6px;
+    transition:transform .7s cubic-bezier(.3,1.6,.5,1);transform-origin:10% 100%;z-index:2}
+  .lazo{position:absolute;top:-22px;left:50%;width:50px;height:26px;transform:translateX(-50%)}
+  .lazo::before,.lazo::after{content:"";position:absolute;bottom:0;width:24px;height:22px;border:6px solid var(--dorado);border-radius:50% 50% 0 50%}
+  .lazo::before{left:0;transform:rotate(-20deg)}
+  .lazo::after{right:0;border-radius:50% 50% 50% 0;transform:rotate(20deg)}
+  .abierto .tapa{transform:translate(-18px,-40px) rotate(-28deg)}
+  .temblar{animation:temblar .5s}
+  @keyframes temblar{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+  label{display:block;font-weight:800;font-size:15px;margin-bottom:10px;color:var(--verde)}
+  input{width:100%;font:inherit;font-size:22px;font-weight:800;text-align:center;letter-spacing:2px;text-transform:uppercase;
+    padding:14px;border-radius:14px;border:3px solid #d9c9a8;background:#fff;color:#3a1d14;outline:none}
+  input:focus{border-color:var(--verde)}
+  button{margin-top:14px;width:100%;font:inherit;font-size:19px;font-weight:800;color:#fff;cursor:pointer;
+    padding:15px;border:0;border-radius:14px;background:linear-gradient(180deg,#e01b3c,var(--rojo-osc));
+    box-shadow:0 5px 0 #4d0612;transition:transform .1s}
+  button:active{transform:translateY(3px);box-shadow:0 2px 0 #4d0612}
+  .error{min-height:22px;margin-top:12px;color:var(--rojo);font-weight:700;font-size:15px}
+
+  /* Resultado */
+  #resultado{display:none}
+  .hola{font-size:18px;font-weight:700;color:var(--verde)}
+  .toca{margin:14px 0 6px;font-size:15px;text-transform:uppercase;letter-spacing:2px;opacity:.75}
+  .nombre{font-family:'Mountains of Christmas',cursive;font-size:clamp(40px,12vw,56px);color:var(--rojo);line-height:1.1;
+    animation:aparecer .8s cubic-bezier(.3,1.6,.5,1) both;word-break:break-word}
+  @keyframes aparecer{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .secreto{margin-top:16px;font-size:14px;opacity:.8}
+  .otra{background:none;color:var(--verde);box-shadow:none;font-size:15px;text-decoration:underline;margin-top:10px}
+  .otra:active{transform:none;box-shadow:none}
+
+  footer{position:relative;z-index:1;padding:18px;font-size:13px;opacity:.6}
+  .pinos{position:fixed;bottom:-10px;left:0;right:0;height:90px;z-index:0;pointer-events:none;opacity:.55;
+    background:
+      linear-gradient(135deg,transparent 50%,#04150d 50%) 0 100%/60px 60px repeat-x,
+      linear-gradient(225deg,transparent 50%,#04150d 50%) 0 100%/60px 60px repeat-x}
+  .confeti{position:fixed;top:-20px;width:10px;height:14px;z-index:5;pointer-events:none;animation:caer linear forwards}
+  @keyframes caer{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<canvas id="nieve"></canvas>
+<div class="luces" id="luces"></div>
+<div class="pinos"></div>
+
+<main>
+  <h1>Amigo Secreto</h1>
+  <p class="sub">🎄 Ingresá tu clave para descubrir a quién le regalás 🎁</p>
+
+  <div class="tarjeta">
+    <div class="regalo" id="regalo">
+      <div class="tapa"><div class="lazo"></div></div>
+      <div class="caja"></div>
+    </div>
+
+    <form id="formulario" autocomplete="off">
+      <label for="clave">Tu clave secreta</label>
+      <input id="clave" type="text" placeholder="EJ: ESTRELLA-25" spellcheck="false" autocapitalize="characters">
+      <button type="submit">Abrir mi regalo ✨</button>
+      <p class="error" id="error"></p>
+    </form>
+
+    <div id="resultado">
+      <p class="hola" id="hola"></p>
+      <p class="toca">Te toca regalarle a</p>
+      <p class="nombre" id="nombre"></p>
+      <p class="secreto">🤫 ¡Shhh! Es secreto, no le digás a nadie.</p>
+      <button class="otra" id="otra" type="button">Salir</button>
+    </div>
+  </div>
+</main>
+<footer>Feliz Navidad 🎅</footer>
+
+<script>
+/* Sorteo cifrado: lo genera sortear.js. Sin la clave no se puede leer quién le toca a quién. */
+const SORTEO = /*DATOS*/{"e":{"dc85b2ef7e8bfbf221b556dc350a490baccde9ab0548de62285305d89c981281":"LwA3OWe1axS1Out4HAAeMVB5Om5XuvjDC6w1OGc=","6810276404b033af0f0b14d5a70b5c42e2905ca26b476190d73fde68d7538695":"8u6SLwYH1aCTbJ7Pz/BMiBPGLHAYP6+GGaGTZnE45e8=","942ff1846aa7c6136ccada17c67328aa073d21dc3fef2ef281df47a99ccdc4cb":"GnndG0LNCcdzvW83YS+4cplJZt25PG8QNoZ4lcFTQdpJ","11270a3288cc61a5c4ce9ff9e34d2f6db75a2bc0c5f12affc6f6d56add4123c7":"q7KTGxSf/pQVNBVEithAZRMjw6I4Wn+2uItMNBiPag==","001c890d31728b8de684cbb603929e67d3e7b9eb1308939889d93f9ab3a4c280":"NxYwj+e39cIXJ0IHMvqtzuL87hNH3SRGcbfto09b2s8=","643e1d88c7f077a6f1e3305408bd613209ecf792da937bf755e5dda420f96a49":"REqBTxYvz6Rn96mf3u450w22cQuQrrh4vufdhkCw506f","45958d5bd0c07e343a5ae2602cc9a8a81fbacc492e3ad3007cb44afdf31154a3":"mj2R5bUcCGQJ/rOpKW2XgoZgFqraNs3f4nfxWiyKaQ=="}}/*FIN*/;
+
+const enc = new TextEncoder();
+const normalizar = s => s.toUpperCase().replace(/\s+/g,'').replace(/[–—_]/g,'-');
+async function sha(texto){
+  if(window.crypto && crypto.subtle) return new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(texto)));
+  return sha256(enc.encode(texto));
+}
+// SHA-256 de respaldo, para cuando la página se abre sin https (crypto.subtle no existe)
+function sha256(m){
+  const K=[],H=[];let p=2,n=0;
+  const primo=x=>{for(let d=2;d*d<=x;d++)if(x%d===0)return false;return true};
+  while(n<64){if(primo(p)){if(n<8)H[n]=(Math.pow(p,1/2)%1)*2**32|0;K[n]=(Math.pow(p,1/3)%1)*2**32|0;n++}p++}
+  const l=m.length,b=new Uint8Array(((l+9+63)>>6)<<6);b.set(m);b[l]=0x80;
+  const dv=new DataView(b.buffer);dv.setUint32(b.length-4,l*8);dv.setUint32(b.length-8,Math.floor(l/2**29));
+  const r=(x,y)=>(x>>>y)|(x<<(32-y)),w=new Array(64);
+  for(let o=0;o<b.length;o+=64){
+    for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){const a=w[i-15],c=w[i-2];
+      w[i]=(w[i-16]+(r(a,7)^r(a,18)^(a>>>3))+w[i-7]+(r(c,17)^r(c,19)^(c>>>10)))|0}
+    let [A,B,C,D,E,F,G,I]=H;
+    for(let i=0;i<64;i++){
+      const t1=(I+(r(E,6)^r(E,11)^r(E,25))+((E&F)^(~E&G))+K[i]+w[i])|0;
+      const t2=((r(A,2)^r(A,13)^r(A,22))+((A&B)^(A&C)^(B&C)))|0;
+      I=G;G=F;F=E;E=(D+t1)|0;D=C;C=B;B=A;A=(t1+t2)|0}
+    H[0]=H[0]+A|0;H[1]=H[1]+B|0;H[2]=H[2]+C|0;H[3]=H[3]+D|0;H[4]=H[4]+E|0;H[5]=H[5]+F|0;H[6]=H[6]+G|0;H[7]=H[7]+I|0;
+  }
+  const out=new Uint8Array(32),ov=new DataView(out.buffer);H.forEach((h,i)=>ov.setUint32(i*4,h));return out;
+}
+const hex = b => [...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+
+async function descifrar(clave, b64){
+  const datos = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+  const out = new Uint8Array(datos.length);
+  for(let i=0;i<datos.length;i+=32){
+    const k = await sha('k|'+(i/32)+'|'+clave);
+    for(let j=0;j<32 && i+j<datos.length;j++) out[i+j] = datos[i+j]^k[j];
+  }
+  return JSON.parse(new TextDecoder().decode(out));
+}
+
+const $ = id => document.getElementById(id);
+$('formulario').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const clave = normalizar($('clave').value);
+  $('error').textContent = '';
+  if(!clave){ $('error').textContent = 'Escribí tu clave primero 🙂'; return; }
+  const id = hex(await sha('id|'+clave));
+  const cifrado = SORTEO.e[id];
+  if(!cifrado){
+    $('error').textContent = 'Esa clave no existe. Revisala bien 🎅';
+    $('regalo').classList.remove('temblar'); void $('regalo').offsetWidth; $('regalo').classList.add('temblar');
+    return;
+  }
+  const {de, para} = await descifrar(clave, cifrado);
+  $('hola').textContent = '¡Hola, ' + de + '! 🎉';
+  $('nombre').textContent = para;
+  $('formulario').style.display = 'none';
+  $('resultado').style.display = 'block';
+  $('regalo').classList.add('abierto');
+  confeti();
+});
+$('otra').addEventListener('click', ()=>{
+  $('clave').value = '';
+  $('resultado').style.display = 'none';
+  $('formulario').style.display = 'block';
+  $('regalo').classList.remove('abierto');
+  $('clave').focus();
+});
+
+function confeti(){
+  const colores = ['#f4c430','#c8102e','#ffffff','#2ecc71','#3bd1ff'];
+  for(let i=0;i<80;i++){
+    const c = document.createElement('div');
+    c.className = 'confeti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colores[i%colores.length];
+    c.style.animationDuration = (2+Math.random()*2.5)+'s';
+    c.style.animationDelay = Math.random()*.6+'s';
+    c.style.borderRadius = Math.random()<.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 5500);
+  }
+}
+
+/* Luces */
+const luces = $('luces');
+const n = Math.max(10, Math.floor(innerWidth/38));
+for(let i=0;i<n;i++){ const l=document.createElement('div'); l.className='luz'; luces.appendChild(l); }
+
+/* Nieve */
+const cv = $('nieve'), ctx = cv.getContext('2d');
+let copos = [];
+function tam(){ cv.width = innerWidth; cv.height = innerHeight;
+  copos = Array.from({length: Math.floor(innerWidth/9)}, ()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:1+Math.random()*3,v:.4+Math.random()*1.2,o:Math.random()*6})); }
+tam(); addEventListener('resize', tam);
+(function caer(t){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  for(const c of copos){
+    c.y += c.v; c.x += Math.sin(t/1200 + c.o)*.4;
+    if(c.y > cv.height){ c.y = -5; c.x = Math.random()*cv.width; }
+    ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill();
+  }
+  requestAnimationFrame(caer);
+})(0);
+</script>
+</body>
+</html>
