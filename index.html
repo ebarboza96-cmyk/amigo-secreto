@@ -78,6 +78,32 @@
   .otra{background:none;color:var(--verde);box-shadow:none;font-size:15px;text-decoration:underline;margin-top:10px}
   .otra:active{transform:none;box-shadow:none}
 
+  /* Listas de deseos */
+  h2{font-family:'Mountains of Christmas',cursive;font-size:30px;color:var(--rojo);line-height:1.1}
+  .seccion{margin-top:24px;padding-top:20px;border-top:2px dashed rgba(200,16,46,.3)}
+  .deseos{display:flex;flex-direction:column;gap:12px;margin-top:14px;text-align:left}
+  .deseo{display:flex;gap:12px;align-items:flex-start;background:#fff;border:2px solid #ecdcbc;border-radius:14px;padding:12px}
+  .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--verde);color:#fff;font-weight:800;
+    display:flex;align-items:center;justify-content:center;font-size:15px}
+  .deseo .info{flex:1;min-width:0}
+  .deseo .txt{font-weight:700;font-size:16px;word-break:break-word}
+  .deseo img{display:block;max-width:100%;max-height:220px;border-radius:10px;margin-top:8px;object-fit:contain}
+  .deseo a{display:inline-block;margin-top:6px;color:var(--rojo);font-weight:800;word-break:break-all}
+  .vacio{opacity:.7;font-size:15px;text-align:center;padding:8px}
+  .mia{margin-top:28px;display:none}
+  .ayuda{font-size:15px;margin:8px 0 16px;opacity:.85}
+  .fila{position:relative;background:#fff;border:2px solid #ecdcbc;border-radius:14px;padding:14px 12px 12px;margin-bottom:12px;text-align:left}
+  .fila .titulo{font-weight:800;color:var(--verde);font-size:15px;margin-bottom:8px}
+  .fila input{font-size:16px;font-weight:600;letter-spacing:0;text-transform:none;text-align:left;padding:10px 12px;border-width:2px;margin-bottom:8px}
+  .fila .foto{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .fila .foto label{margin:0;cursor:pointer;background:var(--verde);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px}
+  .fila .foto img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #ecdcbc}
+  .fila .quitarFoto,.fila .borrar{background:none;box-shadow:none;color:var(--rojo);width:auto;margin:0;padding:6px;font-size:14px;text-decoration:underline}
+  .fila .borrar{position:absolute;top:8px;right:8px}
+  .agregar{background:linear-gradient(180deg,#1f7a4d,var(--verde));box-shadow:0 5px 0 #052e1b}
+  .agregar:active{box-shadow:0 2px 0 #052e1b}
+  .estado{min-height:22px;margin-top:12px;font-weight:700;font-size:15px}
+
   footer{position:relative;z-index:1;padding:18px;font-size:13px;opacity:.6}
   .pinos{position:fixed;bottom:-10px;left:0;right:0;height:90px;z-index:0;pointer-events:none;opacity:.55;
     background:
@@ -114,8 +140,22 @@
       <p class="toca">Te toca regalarle a</p>
       <p class="nombre" id="nombre"></p>
       <p class="secreto">🤫 ¡Shhh! Es secreto, no le digás a nadie.</p>
-      <button class="otra" id="otra" type="button">Salir</button>
+
+      <div class="seccion">
+        <h2>🎁 Lo que quiere <span id="paraNombre"></span></h2>
+        <div id="suLista" class="deseos"></div>
+      </div>
     </div>
+  </div>
+
+  <div class="tarjeta mia" id="miTarjeta">
+    <h2>⭐ Mi lista de deseos</h2>
+    <p class="ayuda">Escribí lo que te gustaría recibir. Tu amigo secreto la va a ver cuando entre con su clave.</p>
+    <div id="editor"></div>
+    <button type="button" class="agregar" id="agregar">+ Agregar deseo</button>
+    <button type="button" id="guardar">Guardar mi lista 💾</button>
+    <p class="estado" id="estado"></p>
+    <button class="otra" id="otra" type="button">Salir</button>
   </div>
 </main>
 <footer>Feliz Navidad 🎅</footer>
@@ -177,19 +217,150 @@ $('formulario').addEventListener('submit', async e=>{
     return;
   }
   const {de, para} = await descifrar(clave, cifrado);
+  miClave = clave;
   $('hola').textContent = '¡Hola, ' + de + '! 🎉';
   $('nombre').textContent = para;
+  $('paraNombre').textContent = para;
   $('formulario').style.display = 'none';
   $('resultado').style.display = 'block';
+  $('miTarjeta').style.display = 'block';
   $('regalo').classList.add('abierto');
   confeti();
+  cargarListas(de, para);
 });
 $('otra').addEventListener('click', ()=>{
+  miClave = ''; misDeseos = [];
   $('clave').value = '';
+  $('estado').textContent = '';
   $('resultado').style.display = 'none';
+  $('miTarjeta').style.display = 'none';
   $('formulario').style.display = 'block';
   $('regalo').classList.remove('abierto');
+  scrollTo({top:0, behavior:'smooth'});
   $('clave').focus();
+});
+
+/* Listas de deseos: se guardan en un Worker de Cloudflare */
+const API = 'https://amigo-secreto-deseos.ebarboza96.workers.dev/lista';
+let miClave = '', misDeseos = [];
+
+async function leerLista(nombre){
+  const r = await fetch(API + '?nombre=' + encodeURIComponent(nombre));
+  if(!r.ok) throw new Error();
+  return (await r.json()).items;
+}
+
+async function cargarListas(de, para){
+  const su = $('suLista');
+  su.innerHTML = '<p class="vacio">Cargando… 🎄</p>';
+  $('editor').innerHTML = '<p class="vacio">Cargando… 🎄</p>';
+  const [suya, mia] = await Promise.allSettled([leerLista(para), leerLista(de)]);
+  if(suya.status === 'fulfilled') mostrarLista(su, suya.value, para);
+  else su.innerHTML = '<p class="vacio">No se pudo cargar la lista. Probá de nuevo más tarde.</p>';
+  misDeseos = mia.status === 'fulfilled' ? mia.value : [];
+  if(!misDeseos.length) misDeseos = [{texto:'', link:'', imagen:''}];
+  pintarEditor();
+}
+
+function mostrarLista(cont, items, nombre){
+  cont.innerHTML = '';
+  if(!items.length){
+    const p = document.createElement('p'); p.className = 'vacio';
+    p.textContent = nombre + ' todavía no ha escrito su lista. ¡Volvé a revisar luego! 👀';
+    cont.appendChild(p); return;
+  }
+  items.forEach((it, i)=>{
+    const d = document.createElement('div'); d.className = 'deseo';
+    const n = document.createElement('div'); n.className = 'num'; n.textContent = i + 1;
+    const info = document.createElement('div'); info.className = 'info';
+    if(it.texto){ const t = document.createElement('div'); t.className = 'txt'; t.textContent = it.texto; info.appendChild(t); }
+    if(it.imagen){ const img = document.createElement('img'); img.src = it.imagen; img.alt = it.texto || 'Deseo ' + (i+1); img.loading = 'lazy'; info.appendChild(img); }
+    if(it.link){ const a = document.createElement('a'); a.href = it.link; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Ver dónde comprarlo 🔗'; info.appendChild(a); }
+    d.append(n, info); cont.appendChild(d);
+  });
+}
+
+function pintarEditor(){
+  const ed = $('editor'); ed.innerHTML = '';
+  misDeseos.forEach((it, i)=>{
+    const f = document.createElement('div'); f.className = 'fila';
+    const titulo = document.createElement('div'); titulo.className = 'titulo'; titulo.textContent = 'Deseo #' + (i + 1);
+    const borrar = document.createElement('button'); borrar.type = 'button'; borrar.className = 'borrar'; borrar.textContent = 'Quitar';
+    borrar.onclick = ()=>{ misDeseos.splice(i, 1); if(!misDeseos.length) misDeseos.push({texto:'',link:'',imagen:''}); pintarEditor(); };
+    const texto = campo('¿Qué querés? Ej: Audífonos inalámbricos', it.texto, v=>it.texto = v, 200);
+    const link = campo('Link de dónde comprarlo (opcional)', it.link, v=>it.link = v, 1000);
+    link.type = 'url';
+
+    const foto = document.createElement('div'); foto.className = 'foto';
+    const id = 'foto' + i;
+    const lbl = document.createElement('label'); lbl.htmlFor = id; lbl.textContent = it.imagen ? '📷 Cambiar foto' : '📷 Agregar foto';
+    const archivo = document.createElement('input'); archivo.type = 'file'; archivo.accept = 'image/*'; archivo.id = id; archivo.hidden = true;
+    archivo.onchange = async ()=>{
+      if(!archivo.files[0]) return;
+      lbl.textContent = 'Procesando…';
+      try{ it.imagen = await achicarFoto(archivo.files[0]); }catch{ alert('No se pudo leer esa foto'); }
+      pintarEditor();
+    };
+    foto.append(lbl, archivo);
+    if(it.imagen){
+      const img = document.createElement('img'); img.src = it.imagen; img.alt = '';
+      const q = document.createElement('button'); q.type = 'button'; q.className = 'quitarFoto'; q.textContent = 'Quitar foto';
+      q.onclick = ()=>{ it.imagen = ''; pintarEditor(); };
+      foto.append(img, q);
+    }
+    f.append(titulo, borrar, texto, link, foto);
+    ed.appendChild(f);
+  });
+  $('agregar').style.display = misDeseos.length >= 15 ? 'none' : 'block';
+}
+
+function campo(ph, valor, alCambiar, max){
+  const c = document.createElement('input'); c.type = 'text'; c.placeholder = ph; c.value = valor || ''; c.maxLength = max;
+  c.oninput = ()=>{ alCambiar(c.value); $('estado').textContent = ''; };
+  return c;
+}
+
+// Achica la foto para que pese poco (máx. 800px, JPEG)
+function achicarFoto(file){
+  return new Promise((ok, mal)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const esc = Math.min(1, 800 / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,cv.width,cv.height);
+      cx.drawImage(img, 0, 0, cv.width, cv.height);
+      let q = .82, url = cv.toDataURL('image/jpeg', q);
+      while(url.length > 380000 && q > .3){ q -= .12; url = cv.toDataURL('image/jpeg', q); }
+      URL.revokeObjectURL(img.src); ok(url);
+    };
+    img.onerror = mal;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$('agregar').addEventListener('click', ()=>{
+  misDeseos.push({texto:'', link:'', imagen:''}); pintarEditor();
+  const filas = $('editor').querySelectorAll('.fila input[type=text]');
+  filas[filas.length - 1]?.focus();
+});
+
+$('guardar').addEventListener('click', async ()=>{
+  const est = $('estado');
+  const malo = misDeseos.find(it=>it.link && !/^https?:\/\//i.test(it.link.trim()));
+  if(malo){ est.style.color = 'var(--rojo)'; est.textContent = 'Los links tienen que empezar con http:// o https://'; return; }
+  est.style.color = 'var(--verde)'; est.textContent = 'Guardando…';
+  $('guardar').disabled = true;
+  try{
+    const r = await fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({clave: miClave, items: misDeseos})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error);
+    misDeseos = d.items.length ? d.items : [{texto:'',link:'',imagen:''}];
+    pintarEditor();
+    est.style.color = 'var(--verde)'; est.textContent = '¡Lista guardada! ✅ Tu amigo secreto ya la puede ver.';
+  }catch(err){
+    est.style.color = 'var(--rojo)'; est.textContent = 'No se pudo guardar: ' + (err.message || 'revisá tu internet');
+  }finally{ $('guardar').disabled = false; }
 });
 
 function confeti(){

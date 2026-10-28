@@ -54,6 +54,11 @@ const pagina = fs.readFileSync(html, 'utf8')
   .replace(/\/\*DATOS\*\/.*?\/\*FIN\*\//s, '/*DATOS*/' + JSON.stringify({ e }) + '/*FIN*/');
 fs.writeFileSync(html, pagina);
 
+// Para el Worker de listas de deseos (después: cd worker && npx wrangler deploy)
+const participantes = Object.fromEntries(claves.map(([n, c]) => [sha('id|' + c).toString('hex'), n]));
+const dirWorker = path.join(dir, 'worker');
+if (fs.existsSync(dirWorker)) fs.writeFileSync(path.join(dirWorker, 'participantes.json'), JSON.stringify(participantes, null, 1));
+
 const texto = 'CLAVES DEL AMIGO SECRETO (dale a cada quien SOLO la suya)\n\n' +
   claves.map(([n, c]) => n.padEnd(14) + c).join('\n') + '\n';
 fs.writeFileSync(path.join(dir, 'claves.txt'), texto);
